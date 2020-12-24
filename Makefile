@@ -15,7 +15,7 @@ CFLAGS = -Wall -g
 
 # define any directories containing header files other than /usr/include
 #
-INCLUDES =
+INCLUDES = -Iinc
 
 # define library paths in addition to /usr/lib
 #   if I wanted to include libraries not in /usr/lib I'd specify
@@ -30,7 +30,8 @@ LIBS =
 # define the C source files
 MOUNT_OBJS = $(BUILDDIR)mount/mount.o
 SYNC_OBJS  = $(BUILDDIR)sync/sync.o
-PS_OBJS    = $(BUILDDIR)ps/ps.o
+PS_OBJS    = $(BUILDDIR)ps/ps.o $(BUILDDIR)lib/proc.o
+DBG_OBJS   = $(BUILDDIR)dbg/dbg.o $(BUILDDIR)lib/proc.o
 
 # define the C object files
 #
@@ -41,7 +42,7 @@ PS_OBJS    = $(BUILDDIR)ps/ps.o
 # with the .o suffix
 #
 
-all: $(BUILDDIR)bin/mount $(BUILDDIR)bin/sync
+all: $(BUILDDIR)bin/mount $(BUILDDIR)bin/sync $(BUILDDIR)bin/ps $(BUILDDIR)bin/dbg
 
 $(BUILDDIR)bin:
 	mkdir $(BUILDDIR)bin
@@ -55,19 +56,29 @@ $(BUILDDIR)sync:
 $(BUILDDIR)ps:
 	mkdir $(BUILDDIR)ps
 
+$(BUILDDIR)lib:
+	mkdir $(BUILDDIR)lib
+
+$(BUILDDIR)dbg:
+	mkdir $(BUILDDIR)dbg
+
 $(BUILDDIR)bin/mount: $(BUILDDIR)bin $(BUILDDIR)mount $(MOUNT_OBJS)
 	$(LD) $(LFLAGS) $(LIBS) -o $(BUILDDIR)bin/mount $(MOUNT_OBJS)
 
 $(BUILDDIR)bin/sync: $(BUILDDIR)bin $(BUILDDIR)sync $(SYNC_OBJS)
 	$(LD) $(LFLAGS) $(LIBS) -o $(BUILDDIR)bin/sync $(SYNC_OBJS)
 
-$(BUILDDIR)bin/ps: $(BUILDDIR)bin $(BUILDDIR)ps $(PS_OBJS)
+$(BUILDDIR)bin/ps: $(BUILDDIR)bin $(BUILDDIR)lib $(BUILDDIR)ps $(PS_OBJS)
 	$(LD) $(LFLAGS) $(LIBS) -o $(BUILDDIR)bin/ps $(PS_OBJS)
 
-install: $(BUILDDIR)bin/mount $(BUILDDIR)bin/sync $(BUILDDIR)bin/ps
+$(BUILDDIR)bin/dbg: $(BUILDDIR)bin $(BUILDDIR)lib $(BUILDDIR)dbg $(DBG_OBJS)
+	$(LD) $(LFLAGS) $(LIBS) -o $(BUILDDIR)bin/dbg $(DBG_OBJS)
+
+install: $(BUILDDIR)bin/mount $(BUILDDIR)bin/sync $(BUILDDIR)bin/ps $(BUILDDIR)bin/dbg
 	install $(BUILDDIR)bin/mount $(DESTDIR)/sbin/mount
 	install $(BUILDDIR)bin/sync $(DESTDIR)/sbin/sync
 	install $(BUILDDIR)bin/ps $(DESTDIR)/bin/ps
+	install $(BUILDDIR)bin/dbg $(DESTDIR)/bin/dbg
 
 .PHONY: depend clean
 
@@ -76,6 +87,8 @@ install: $(BUILDDIR)bin/mount $(BUILDDIR)bin/sync $(BUILDDIR)bin/ps
 # the rule(a .c file) and $@: the name of the target of the rule (a .o file)
 # (see the gnu make manual section about automatic variables)
 $(BUILDDIR)%.o: %.c
+	$(CC) $(CFLAGS) $(INCLUDES) -c $<  -o $@
+$(BUILDDIR)lib/%.o: %.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $<  -o $@
 
 clean:
